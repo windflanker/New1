@@ -1,4 +1,4 @@
-const config = require('./config');
+import config from './config.js';
 
 const toMinutes = (hhmm) => {
   const [h, m] = hhmm.split(':').map(Number);
@@ -52,4 +52,4 @@ function validateDate(date) {
   return null;
 }
 
-module.exports = { buildSlots, museumNow, addDays, validateDate };
+export { buildSlots, museumNow, addDays, validateDate };

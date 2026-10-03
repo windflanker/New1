@@ -1,5 +1,5 @@
 // Museum booking rules. Change these values to adjust the schedule.
-module.exports = {
+export default {
   openingTime: '09:45',     // first slot starts here
   closingTime: '17:30',     // no slot may end after this
   slotMinutes: 60,          // each visiting slot lasts one hour
