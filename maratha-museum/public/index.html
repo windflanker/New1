@@ -4,152 +4,187 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Maratha Museum – Book Your Visit</title>
+  <meta name="description" content="Book a visiting slot at the Maratha Museum. Entry ₹50 per person, paid at the counter.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Figtree:wght@200;400;500;600;700&display=swap">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="inner">
-      <svg class="emblem" viewBox="0 0 64 64" aria-hidden="true">
-        <circle cx="32" cy="32" r="30" fill="#e8741c"/>
-        <path d="M20 50V26l12-12 12 12v24h-7V36h-10v14z" fill="#fff"/>
-        <path d="M32 6v10M29 8l3-3 3 3" stroke="#fff" stroke-width="2" fill="none"/>
+  <header class="topbar">
+    <a class="brand glass-pill" href="/">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="16" fill="rgba(255,255,255,.22)"/>
+        <path d="M8 24v-8l2-2 2 2v-3l4-4 4 4v3l2-2 2 2v8z" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M16 9V4.5" stroke="#fff" stroke-width="1.4"/><path d="M16 4.5l4 1.6-4 1.6z" fill="#f28a1e"/>
       </svg>
-      <div>
-        <h1>Maratha Museum</h1>
-        <p>Book your visit slot online · Pay at the counter</p>
-      </div>
-      <nav><a href="#lookup-card">Find my booking</a></nav>
-    </div>
+      <div><strong>Maratha Museum</strong><span>Book your visit</span></div>
+    </a>
+    <nav><a class="glass-pill" href="#lookup-card">Find my booking</a></nav>
   </header>
-
-  <section class="info-strip" aria-label="Visiting information">
-    <div><strong>Opens 0945h</strong><span>Daily visiting slots</span></div>
-    <div><strong>1-hour slots</strong><span>15-minute break between slots</span></div>
-    <div><strong>20 visitors / slot</strong><span>Book early to get your time</span></div>
-    <div><strong>₹50 per person</strong><span>Pay in cash/UPI at the counter</span></div>
-  </section>
 
   <main>
     <!-- ======== Booking form ======== -->
-    <div id="form-view" class="layout">
-      <form id="booking-form" class="card" novalidate>
-        <div id="form-alert" class="alert error-box" role="alert"></div>
-
-        <fieldset>
-          <legend><span class="step">1</span> Plan your visit</legend>
-          <div class="row">
-            <div class="field" data-field="date">
-              <label for="date">Date of visit <span class="req">*</span></label>
-              <input type="date" id="date" name="date" required>
-              <span class="hint" id="date-hint"></span>
-              <span class="error"></span>
+    <form id="booking-form" class="form-view" novalidate>
+        <!-- Hero widget: date, total, week strip -->
+        <section class="glass card hero" aria-label="Your visit">
+          <div>
+            <div class="when" id="sum-date">Choose a date</div>
+            <div class="big" aria-live="polite">
+              <span class="unit">₹</span><span class="num" id="sum-total">50</span>
             </div>
-            <div class="field" data-field="visitors">
-              <label for="visitors">Number of visitors <span class="req">*</span></label>
-              <div class="stepper">
-                <button type="button" data-step="-1" aria-label="Fewer visitors">−</button>
-                <input type="number" id="visitors" name="visitors" value="1" min="1" max="20" inputmode="numeric" required>
-                <button type="button" data-step="1" aria-label="More visitors">+</button>
-              </div>
-              <span class="hint">Including children. Maximum 20 per booking.</span>
-              <span class="error"></span>
+            <div class="big-label">Payable at the counter · no online payment</div>
+          </div>
+          <div class="hero-side">
+            <svg class="icon" viewBox="0 0 48 48" aria-hidden="true">
+              <path d="M6 40V26l4-4 4 4v-6l10-10 10 10v6l4-4 4 4v14z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M20 40v-8a4 4 0 0 1 8 0v8" fill="none" stroke="#fff" stroke-width="2"/>
+              <path d="M24 10V3" stroke="#fff" stroke-width="2"/><path d="M24 3l7 2.6-7 2.6z" fill="#f28a1e"/>
+            </svg>
+            <div class="slot-line">Slot <strong id="sum-slot">not chosen yet</strong></div>
+            <div class="chips">
+              <span class="chip"><span><span id="sum-visitors">1</span> visitor<span id="sum-plural"></span></span></span>
+              <span class="chip">₹50 each</span>
             </div>
           </div>
 
+          <div class="week" data-field="date">
+            <div class="week-nav">
+              <button type="button" class="round-btn glass-pill" id="week-prev" aria-label="Previous week">‹</button>
+              <span id="week-label" aria-live="polite"></span>
+              <button type="button" class="round-btn glass-pill" id="week-next" aria-label="Next week">›</button>
+            </div>
+            <div class="days" id="days" role="group" aria-label="Date of visit"></div>
+            <input type="hidden" id="date" name="date">
+            <span class="error"></span>
+          </div>
+        </section>
+
+        <div id="form-alert" class="alert error-box" role="alert"></div>
+
+        <!-- Slots -->
+        <section class="glass card" aria-labelledby="slot-label">
+          <div class="card-head">
+            <div>
+              <h2 id="slot-label">Choose a time</h2>
+              <p>Each slot is 1 hour, with a 15-minute break between slots. Up to 20 visitors per slot.</p>
+            </div>
+            <div class="stepper glass-pill" data-field="visitors">
+              <label class="stepper-label" for="visitors">Visitors</label>
+              <button type="button" data-step="-1" aria-label="Fewer visitors">−</button>
+              <input type="number" id="visitors" name="visitors" value="1" min="1" max="20" inputmode="numeric">
+              <button type="button" data-step="1" aria-label="More visitors">+</button>
+            </div>
+          </div>
           <div class="field" data-field="slotId">
-            <span class="label" id="slot-label">Time slot <span class="req">*</span></span>
             <div id="slots" class="slots" role="radiogroup" aria-labelledby="slot-label">
               <div class="slot-placeholder">Choose a date to see available slots.</div>
             </div>
             <span class="error"></span>
           </div>
-        </fieldset>
+          <p class="note">Children count as visitors. Groups larger than 20 need to book more than one slot.</p>
+        </section>
 
-        <fieldset>
-          <legend><span class="step">2</span> Your details</legend>
-          <div class="field" data-field="name">
-            <label for="name">Full name <span class="req">*</span></label>
-            <input type="text" id="name" name="name" autocomplete="name" maxlength="80" placeholder="Name of the person booking" required>
-            <span class="error"></span>
+        <!-- Details -->
+        <section class="glass card" aria-labelledby="details-label">
+          <div class="card-head">
+            <div><h2 id="details-label">Your details</h2><p>We use your mobile number to find your booking at the counter.</p></div>
           </div>
-          <div class="row">
+          <div class="fields">
+            <div class="field full" data-field="name">
+              <label class="label" for="name">Full name <span class="req">*</span></label>
+              <div class="input-pill">
+                <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></span>
+                <input type="text" id="name" name="name" autocomplete="name" maxlength="80" placeholder="Name of the person booking">
+              </div>
+              <span class="error"></span>
+            </div>
             <div class="field" data-field="mobile">
-              <label for="mobile">Mobile number <span class="req">*</span></label>
-              <input type="tel" id="mobile" name="mobile" autocomplete="tel" inputmode="numeric" maxlength="14" placeholder="10-digit mobile" required>
-              <span class="hint">Needed to find your booking at the counter.</span>
+              <label class="label" for="mobile">Mobile number <span class="req">*</span></label>
+              <div class="input-pill">
+                <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span>
+                <input type="tel" id="mobile" name="mobile" autocomplete="tel" inputmode="numeric" maxlength="14" placeholder="10-digit mobile">
+              </div>
               <span class="error"></span>
             </div>
             <div class="field" data-field="email">
-              <label for="email">Email <span class="hint">(optional)</span></label>
-              <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com">
+              <label class="label" for="email">Email</label>
+              <div class="input-pill">
+                <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.5 7.1"/></svg></span>
+                <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com">
+                <span class="tag">optional</span>
+              </div>
+              <span class="error"></span>
+            </div>
+            <div class="field" data-field="city">
+              <label class="label" for="city">City / Town</label>
+              <div class="input-pill">
+                <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span>
+                <input type="text" id="city" name="city" autocomplete="address-level2" maxlength="60" placeholder="e.g. Pune">
+                <span class="tag">optional</span>
+              </div>
+              <span class="error"></span>
+            </div>
+            <div class="field full" data-field="notes">
+              <label class="label" for="notes">Notes for the museum</label>
+              <div class="textarea-wrap">
+                <textarea id="notes" name="notes" maxlength="300" placeholder="School group, senior citizens, guide required…"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="checks">
+            <label class="check">
+              <input type="checkbox" id="assistance" name="assistance">
+              <span>Someone in our group needs wheelchair or mobility assistance.</span>
+            </label>
+            <div data-field="agree">
+              <label class="check">
+                <input type="checkbox" id="agree" name="agree">
+                <span>I understand the entry fee of <strong>₹50 per person</strong> is paid at the museum counter, and we will arrive at least 10 minutes before our slot. <span class="req">*</span></span>
+              </label>
               <span class="error"></span>
             </div>
           </div>
-          <div class="field" data-field="city">
-            <label for="city">City / Town <span class="hint">(optional)</span></label>
-            <input type="text" id="city" name="city" autocomplete="address-level2" maxlength="60" placeholder="e.g. Pune">
-            <span class="error"></span>
-          </div>
-        </fieldset>
 
-        <fieldset>
-          <legend><span class="step">3</span> Anything else?</legend>
-          <label class="check">
-            <input type="checkbox" id="assistance" name="assistance">
-            <span>Someone in our group needs wheelchair or mobility assistance.</span>
-          </label>
-          <div class="field" data-field="notes">
-            <label for="notes">Notes for the museum <span class="hint">(optional)</span></label>
-            <textarea id="notes" name="notes" maxlength="300" placeholder="School group, senior citizens, guide required, etc."></textarea>
+          <div class="submit-row">
+            <div class="total-note">Total payable at counter: <strong id="sum-total-2">₹50</strong></div>
+            <button type="submit" class="btn" id="submit-btn"><span id="submit-text">Confirm booking</span><span class="arrow" aria-hidden="true">›</span></button>
           </div>
-          <div class="field" data-field="agree">
-            <label class="check">
-              <input type="checkbox" id="agree" name="agree" required>
-              <span>I understand the entry fee of <strong>₹50 per person</strong> is paid at the museum counter, and that we should arrive at least 10 minutes before our slot. <span class="req">*</span></span>
-            </label>
-            <span class="error"></span>
-          </div>
-        </fieldset>
-
-        <button type="submit" class="btn block" id="submit-btn">Confirm booking</button>
-      </form>
-
-      <aside class="card summary" aria-live="polite">
-        <h2>Booking summary</h2>
-        <dl>
-          <dt>Date</dt><dd id="sum-date">—</dd>
-          <dt>Slot</dt><dd id="sum-slot">—</dd>
-          <dt>Visitors</dt><dd id="sum-visitors">1</dd>
-          <dt>Fee</dt><dd>₹50 × <span id="sum-visitors-2">1</span></dd>
-        </dl>
-        <div class="total"><span>Payable at counter</span><strong id="sum-total">₹50</strong></div>
-        <p class="note">No online payment is taken. Show your booking ID at the counter and pay there.</p>
-      </aside>
-    </div>
+        </section>
+    </form>
 
     <!-- ======== Confirmation ======== -->
-    <div id="confirm-view" class="hidden">
-      <div class="alert ok-box" style="max-width:560px;margin:0 auto 16px">Your visit is booked. Please save or print this pass.</div>
-      <article class="pass" id="pass"></article>
+    <section id="confirm-view" class="hidden" aria-live="polite">
+      <div class="alert ok-box">Your visit is booked. Save, print or screenshot this pass.</div>
+      <article class="glass pass" id="pass"></article>
       <div class="actions">
-        <button class="btn secondary" type="button" onclick="window.print()">Print / Save pass</button>
+        <button class="btn ghost" type="button" onclick="window.print()">Print pass</button>
         <button class="btn" type="button" id="book-another">Book another visit</button>
       </div>
-    </div>
+    </section>
 
     <!-- ======== Lookup ======== -->
-    <section id="lookup-card" class="card" style="margin-top:24px">
-      <h2 style="margin-top:0;color:var(--maroon)">Find my booking</h2>
-      <form id="lookup-form" class="row" novalidate>
-        <div class="field"><label for="lk-id">Booking ID</label><input type="text" id="lk-id" placeholder="MM-XXXXXX" required></div>
-        <div class="field"><label for="lk-mobile">Mobile number</label><input type="tel" id="lk-mobile" inputmode="numeric" required></div>
-        <div class="field" style="justify-content:end"><button class="btn secondary" type="submit">Look up</button></div>
+    <section id="lookup-card" class="glass card" aria-labelledby="lookup-title">
+      <div class="card-head"><div><h2 id="lookup-title">Find my booking</h2><p>Enter the booking ID from your pass and the mobile number you booked with.</p></div></div>
+      <form id="lookup-form" class="lookup-form" novalidate>
+        <div class="input-pill">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 6v12" stroke-dasharray="2 2"/></svg></span>
+          <label class="sr-only" for="lk-id">Booking ID</label>
+          <input type="text" id="lk-id" placeholder="Booking ID, e.g. MM-04FF65" autocapitalize="characters">
+        </div>
+        <div class="input-pill">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span>
+          <label class="sr-only" for="lk-mobile">Mobile number</label>
+          <input type="tel" id="lk-mobile" inputmode="numeric" placeholder="Mobile number">
+        </div>
+        <button class="btn ghost" type="submit">Look up</button>
       </form>
-      <div id="lookup-result"></div>
+      <div id="lookup-result" aria-live="polite"></div>
     </section>
   </main>
 
-  <footer>Maratha Museum · Visitor booking portal</footer>
+  <footer>Maratha Museum · Opens 0945h · ₹50 per person at the counter</footer>
 
   <script src="/app.js"></script>
 </body>

@@ -2,13 +2,20 @@
   const $ = (sel) => document.querySelector(sel);
   const form = $('#booking-form');
   const slotsEl = $('#slots');
+  const daysEl = $('#days');
   let cfg = null;
   let slots = [];
+  let weekStart = null; // Monday of the week shown in the date strip (YYYY-MM-DD)
 
   const rupees = (n) => `₹${n.toLocaleString('en-IN')}`;
-  const niceDate = (iso) =>
-    new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // Dates are handled as YYYY-MM-DD strings in UTC so the visitor's own time zone never shifts them.
+  const toDate = (iso) => new Date(`${iso}T00:00:00Z`);
+  const addDays = (iso, n) => { const d = toDate(iso); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const mondayOf = (iso) => addDays(iso, -((toDate(iso).getUTCDay() + 6) % 7));
+  const fmt = (iso, opts) => toDate(iso).toLocaleDateString('en-IN', { timeZone: 'UTC', ...opts });
+  const longDate = (iso) => fmt(iso, { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
 
   async function api(url, options = {}) {
     const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
@@ -18,13 +25,42 @@
   }
 
   const visitors = () => Math.max(1, Math.min(Number(form.visitors.value) || 1, cfg ? cfg.maxGroupSize : 20));
+  const selectedSlotId = () => form.querySelector('input[name=slotId]:checked')?.value;
 
-  // ---------- slot rendering ----------
+  function bookable(iso) {
+    if (iso < cfg.today || iso > cfg.lastBookableDate) return false;
+    return !cfg.closedWeekdays.includes(toDate(iso).getUTCDay());
+  }
+
+  // ---------- date strip ----------
+  function renderWeek() {
+    const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+    daysEl.innerHTML = days.map((iso) => {
+      const on = iso === form.date.value;
+      return `<button type="button" class="day" data-date="${iso}" aria-pressed="${on}" ${bookable(iso) ? '' : 'disabled'}
+          aria-label="${longDate(iso)}"><span class="dow">${fmt(iso, { weekday: 'short' }).toUpperCase()}</span>
+          <span class="dnum">${fmt(iso, { day: 'numeric' })}</span></button>`;
+    }).join('');
+    $('#week-label').textContent = `${fmt(days[0], { day: 'numeric', month: 'short' })} – ${fmt(days[6], { day: 'numeric', month: 'short' })}`;
+    $('#week-prev').disabled = weekStart <= mondayOf(cfg.today);
+    $('#week-next').disabled = addDays(weekStart, 7) > cfg.lastBookableDate;
+  }
+
+  function selectDate(iso) {
+    form.date.value = iso;
+    weekStart = mondayOf(iso);
+    renderWeek();
+    updateSummary();
+    return loadSlots();
+  }
+
+  // ---------- slots ----------
   function renderSlots() {
-    const selected = form.querySelector('input[name=slotId]:checked')?.value;
+    const selected = selectedSlotId();
     const need = visitors();
     if (!slots.length) {
       slotsEl.innerHTML = '<div class="slot-placeholder">Choose a date to see available slots.</div>';
+      updateSummary();
       return;
     }
     slotsEl.innerHTML = slots.map((s) => {
@@ -43,7 +79,7 @@
         </div>`;
     }).join('');
     if (slots.every((s) => s.status !== 'open' || s.remaining < need)) {
-      slotsEl.insertAdjacentHTML('beforeend', '<div class="slot-placeholder" style="grid-column:1/-1">No slot on this date has room for your group. Please try another date or a smaller group.</div>');
+      slotsEl.insertAdjacentHTML('beforeend', '<div class="slot-placeholder">No slot on this date has room for your group. Try another date or a smaller group.</div>');
     }
     updateSummary();
   }
@@ -64,12 +100,14 @@
 
   function updateSummary() {
     const n = visitors();
-    const slot = slots.find((s) => s.id === form.querySelector('input[name=slotId]:checked')?.value);
-    $('#sum-date').textContent = form.date.value ? niceDate(form.date.value) : '—';
-    $('#sum-slot').textContent = slot ? `${slot.start}h – ${slot.end}h` : '—';
+    const slot = slots.find((s) => s.id === selectedSlotId());
+    const total = n * (cfg ? cfg.feePerPerson : 50);
+    $('#sum-date').textContent = form.date.value ? longDate(form.date.value) : 'Choose a date';
+    $('#sum-slot').textContent = slot ? `${slot.start}h – ${slot.end}h` : 'not chosen yet';
     $('#sum-visitors').textContent = n;
-    $('#sum-visitors-2').textContent = n;
-    $('#sum-total').textContent = rupees(n * (cfg ? cfg.feePerPerson : 50));
+    $('#sum-plural').textContent = n === 1 ? '' : 's';
+    $('#sum-total').textContent = total.toLocaleString('en-IN');
+    $('#sum-total-2').textContent = rupees(total);
   }
 
   // ---------- errors ----------
@@ -99,28 +137,33 @@
   // ---------- confirmation ----------
   function showPass(b) {
     $('#pass').innerHTML = `
-      <header><h2>Maratha Museum · Visit Pass</h2></header>
-      <div class="body">
-        <p style="margin:0 0 4px;color:var(--muted)">Booking ID</p>
-        <div class="code">${escapeHtml(b.id)}</div>
-        <dl>
-          <dt>Name</dt><dd>${escapeHtml(b.name)}</dd>
-          <dt>Date</dt><dd>${niceDate(b.date)}</dd>
-          <dt>Time slot</dt><dd>${escapeHtml(b.slotLabel)}</dd>
-          <dt>Visitors</dt><dd>${b.visitors}</dd>
-          <dt>Status</dt><dd><span class="badge ${b.status}">${b.status}</span></dd>
-        </dl>
-        <p class="hint" style="margin-bottom:0">Please reach the counter at least 10 minutes before your slot. Entry closes once the slot begins.</p>
+      <div class="pass-top">
+        <div><div class="eyebrow">Visit pass · Booking ID</div><div class="code">${escapeHtml(b.id)}</div></div>
+        <span class="badge ${b.status}">${b.status}</span>
       </div>
-      <div class="pay"><span>Pay at counter (₹${cfg ? cfg.feePerPerson : 50} × ${b.visitors})</span><strong>${rupees(b.amount)}</strong></div>`;
-    $('#form-view').classList.add('hidden');
+      <dl>
+        <dt>Name</dt><dd>${escapeHtml(b.name)}</dd>
+        <dt>Date</dt><dd>${longDate(b.date)}</dd>
+        <dt>Time slot</dt><dd>${escapeHtml(b.slotLabel)}</dd>
+        <dt>Visitors</dt><dd>${b.visitors}</dd>
+      </dl>
+      <div class="tear"></div>
+      <div class="pay"><span>Pay at the counter<br><small>₹${cfg ? cfg.feePerPerson : 50} × ${b.visitors}</small></span><strong>${rupees(b.amount)}</strong></div>
+      <p class="fine">Please reach the counter at least 10 minutes before your slot. Entry closes once the slot begins.</p>`;
+    form.classList.add('hidden');
     $('#confirm-view').classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   // ---------- events ----------
-  form.date.addEventListener('change', loadSlots);
-  form.visitors.addEventListener('input', () => { renderSlots(); updateSummary(); });
+  daysEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-date]');
+    if (btn && !btn.disabled) selectDate(btn.dataset.date);
+  });
+  $('#week-prev').addEventListener('click', () => { weekStart = addDays(weekStart, -7); renderWeek(); });
+  $('#week-next').addEventListener('click', () => { weekStart = addDays(weekStart, 7); renderWeek(); });
+
+  form.visitors.addEventListener('input', renderSlots);
   form.visitors.addEventListener('blur', () => { form.visitors.value = visitors(); renderSlots(); });
   form.querySelectorAll('[data-step]').forEach((btn) => btn.addEventListener('click', () => {
     form.visitors.value = Math.max(1, Math.min(visitors() + Number(btn.dataset.step), cfg.maxGroupSize));
@@ -133,7 +176,7 @@
     clearErrors();
     const body = {
       date: form.date.value,
-      slotId: form.querySelector('input[name=slotId]:checked')?.value || '',
+      slotId: selectedSlotId() || '',
       visitors: visitors(),
       name: form.name.value,
       mobile: form.mobile.value,
@@ -147,12 +190,12 @@
     if (Object.keys(errs).length) {
       Object.entries(errs).forEach(([k, v]) => setFieldError(k, v));
       $('#form-alert').textContent = 'Please correct the highlighted fields.';
-      form.querySelector('.invalid input, .invalid')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      form.querySelector('.invalid')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     const btn = $('#submit-btn');
     btn.disabled = true;
-    btn.textContent = 'Confirming…';
+    $('#submit-text').textContent = 'Confirming…';
     try {
       const { booking } = await api('/api/bookings', { method: 'POST', body: JSON.stringify(body) });
       showPass(booking);
@@ -163,16 +206,15 @@
       $('#form-alert').scrollIntoView({ behavior: 'smooth', block: 'center' });
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Confirm booking';
+      $('#submit-text').textContent = 'Confirm booking';
     }
   });
 
   $('#book-another').addEventListener('click', () => {
     form.reset();
-    form.date.value = cfg.today;
     $('#confirm-view').classList.add('hidden');
-    $('#form-view').classList.remove('hidden');
-    loadSlots();
+    form.classList.remove('hidden');
+    selectDate(form.date.value || cfg.today);
   });
 
   $('#lookup-form').addEventListener('submit', async (e) => {
@@ -180,10 +222,10 @@
     const out = $('#lookup-result');
     const id = $('#lk-id').value.trim();
     const mobile = $('#lk-mobile').value.trim();
-    if (!id || !mobile) { out.innerHTML = '<p class="error">Enter both booking ID and mobile number.</p>'; return; }
+    if (!id || !mobile) { out.innerHTML = '<p class="error">Enter both the booking ID and the mobile number.</p>'; return; }
     try {
       const { booking: b } = await api(`/api/bookings/${encodeURIComponent(id)}?mobile=${encodeURIComponent(mobile)}`);
-      out.innerHTML = `<p><strong>${escapeHtml(b.id)}</strong> · ${escapeHtml(b.name)} · ${niceDate(b.date)}, ${escapeHtml(b.slotLabel)} ·
+      out.innerHTML = `<p><strong>${escapeHtml(b.id)}</strong> · ${escapeHtml(b.name)} · ${longDate(b.date)}, ${escapeHtml(b.slotLabel)} ·
         ${b.visitors} visitor(s) · ${rupees(b.amount)} · <span class="badge ${b.status}">${b.status}</span></p>`;
     } catch (err) {
       out.innerHTML = `<p class="error">${escapeHtml(err.message)}</p>`;
@@ -193,11 +235,13 @@
   // ---------- init ----------
   (async () => {
     cfg = await api('/api/config');
-    form.date.min = cfg.today;
-    form.date.max = cfg.lastBookableDate;
-    form.date.value = cfg.today;
     form.visitors.max = cfg.maxGroupSize;
-    $('#date-hint').textContent = `You can book up to ${cfg.bookingWindowDays} days ahead.`;
-    loadSlots();
+    await selectDate(cfg.today);
+    // Late in the day every slot has started; jump to the next bookable day instead.
+    if (slots.length && slots.every((s) => s.status === 'closed')) {
+      let next = addDays(cfg.today, 1);
+      while (next <= cfg.lastBookableDate && !bookable(next)) next = addDays(next, 1);
+      if (next <= cfg.lastBookableDate) await selectDate(next);
+    }
   })();
 })();
