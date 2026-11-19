@@ -1,0 +1,19 @@
+// Cloudflare Workers configuration for the Maratha Museum booking portal.
+// Secrets (set in the Cloudflare dashboard or with `npx wrangler secret put`):
+//   MONGODB_URI – MongoDB Atlas connection string
+//   ADMIN_PIN   – PIN for the counter desk
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "maratha-museum-booking",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*"]
+  },
+  "observability": { "enabled": true }
+}
